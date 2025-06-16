@@ -1,0 +1,6 @@
+[package]
+name = "contracts"
+type = "bin"
+authors = [""]
+
+[dependencies]

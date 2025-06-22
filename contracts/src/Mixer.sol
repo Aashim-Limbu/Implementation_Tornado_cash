@@ -59,7 +59,7 @@ contract Mixer is IncrementalMerkleTree {
         external
     {
         // Check that the root that was used in the proof matches the root on-chain.
-        if (_isKnownRoot(_root)) {
+        if (!_isKnownRoot(_root)) {
             revert Mixer__UnknownRoot(_root);
         }
         if (s_nullifierHashes[_nullifierHash]) {
@@ -68,7 +68,7 @@ contract Mixer is IncrementalMerkleTree {
         bytes32[] memory publicInputs = new bytes32[](3);
         publicInputs[0] = _root;
         publicInputs[1] = _nullifierHash;
-        publicInputs[2] = bytes32(uint256(uint160(msg.sender)));
+        publicInputs[2] = bytes32(uint256(uint160(address(_recipient))));
 
         // Check the nullifier has not been used to prevent the double spending.
         // Check the _proof with some Verifier contract

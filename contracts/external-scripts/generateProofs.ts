@@ -25,9 +25,12 @@ async function generateProofs() {
     const _recipient = args[2];
     const leaves = args.slice(3);
     const tree = await merkleTree(leaves);
-    const commitment = await generateHash([nullifier, secret]);
+    const commitment = await generateHash([
+      Fr.fromString(nullifier),
+      Fr.fromString(secret),
+    ]);
     const merkle_proof = tree.proof(tree.getIndex(commitment));
-    const nullifier_hash = await generateHash([nullifier]);
+    const nullifier_hash = await generateHash([Fr.fromString(nullifier)]);
     const inputs = {
       // Public inputs
       root: merkle_proof.root,
@@ -36,7 +39,7 @@ async function generateProofs() {
       //Private inputs
       nullifier,
       secret,
-      merkle_proof: merkle_proof.pathElements.map((el) => el.toString()),
+      merkle_proof: merkle_proof.pathElements,
       is_even: merkle_proof.pathIndices.map((el) => el % 2 == 0),
     };
     const storeLog = console.log;
@@ -56,9 +59,9 @@ async function generateProofs() {
   }
 }
 
-async function generateHash(input: string[]) {
+async function generateHash(input: Fr[]) {
   const bb = await Barretenberg.new();
-  const hash = await bb.poseidon2Hash(input.map((item) => Fr.fromString(item)));
+  const hash = await bb.poseidon2Hash(input);
   return hash.toString();
 }
 const main = async () => {

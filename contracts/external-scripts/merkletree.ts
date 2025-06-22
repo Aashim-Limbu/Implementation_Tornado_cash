@@ -25,7 +25,9 @@ export class PoseidonTree {
 
   constructor(levels: number, zeros: string[]) {
     if (zeros.length < levels + 1) {
-      throw new Error("Not enough zero values provided for the given tree height.");
+      throw new Error(
+        "Not enough zero values provided for the given tree height."
+      );
     }
     this.levels = levels;
     this.hashLeftRight = hashLeftRight;
@@ -46,7 +48,7 @@ export class PoseidonTree {
 
       // Build intermediate nodes bottom-up
       for (let level = 1; level <= this.levels; level++) {
-        const numNodes = Math.ceil(this.totalLeaves / (2 ** level));
+        const numNodes = Math.ceil(this.totalLeaves / 2 ** level);
         for (let i = 0; i < numNodes; i++) {
           const leftKey = PoseidonTree.indexToKey(level - 1, 2 * i);
           const rightKey = PoseidonTree.indexToKey(level - 1, 2 * i + 1);
@@ -76,7 +78,10 @@ export class PoseidonTree {
 
   // Returns root hash of the tree
   root(): string {
-    return this.storage.get(PoseidonTree.indexToKey(this.levels, 0)) || this.zeros[this.levels];
+    return (
+      this.storage.get(PoseidonTree.indexToKey(this.levels, 0)) ||
+      this.zeros[this.levels]
+    );
   }
 
   // Generates Merkle proof for a leaf
@@ -88,7 +93,9 @@ export class PoseidonTree {
     const pathIndices: number[] = [];
 
     this.traverse(index, (level, currentIndex, siblingIndex) => {
-      const sibling = this.storage.get(PoseidonTree.indexToKey(level, siblingIndex)) || this.zeros[level];
+      const sibling =
+        this.storage.get(PoseidonTree.indexToKey(level, siblingIndex)) ||
+        this.zeros[level];
       pathElements.push(sibling);
       pathIndices.push(currentIndex % 2);
     });
@@ -104,7 +111,11 @@ export class PoseidonTree {
   }
 
   // Updates existing leaf or inserts new one
-  async update(index: number, newLeaf: string, isInsert: boolean = false): Promise<void> {
+  async update(
+    index: number,
+    newLeaf: string,
+    isInsert: boolean = false
+  ): Promise<void> {
     if (!isInsert && index >= this.totalLeaves) {
       throw Error("Use insert method for new elements.");
     } else if (isInsert && index < this.totalLeaves) {
@@ -115,34 +126,44 @@ export class PoseidonTree {
     let currentElement = newLeaf;
 
     // Update path from leaf to root
-    await this.traverseAsync(index, async (level, currentIndex, siblingIndex) => {
-      const sibling = this.storage.get(PoseidonTree.indexToKey(level, siblingIndex)) || this.zeros[level];
-      const [left, right] = currentIndex % 2 === 0
-        ? [currentElement, sibling]
-        : [sibling, currentElement];
+    await this.traverseAsync(
+      index,
+      async (level, currentIndex, siblingIndex) => {
+        const sibling =
+          this.storage.get(PoseidonTree.indexToKey(level, siblingIndex)) ||
+          this.zeros[level];
+        const [left, right] =
+          currentIndex % 2 === 0
+            ? [currentElement, sibling]
+            : [sibling, currentElement];
 
-      keyValueToStore.push({
-        key: PoseidonTree.indexToKey(level, currentIndex),
-        value: currentElement
-      });
+        keyValueToStore.push({
+          key: PoseidonTree.indexToKey(level, currentIndex),
+          value: currentElement,
+        });
 
-      currentElement = await this.hashLeftRight(left, right);
-    });
+        currentElement = await this.hashLeftRight(left, right);
+      }
+    );
 
     // Store root and updated nodes
     keyValueToStore.push({
       key: PoseidonTree.indexToKey(this.levels, 0),
-      value: currentElement
+      value: currentElement,
     });
 
     keyValueToStore.forEach(({ key, value }) => this.storage.set(key, value));
   }
 
   // Traverses tree from leaf to root (synchronous)
-  private traverse(index: number, fn: (level: number, currentIndex: number, siblingIndex: number) => void): void {
+  private traverse(
+    index: number,
+    fn: (level: number, currentIndex: number, siblingIndex: number) => void
+  ): void {
     let currentIndex = index;
     for (let level = 0; level < this.levels; level++) {
-      const siblingIndex = currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
+      const siblingIndex =
+        currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
       fn(level, currentIndex, siblingIndex);
       currentIndex = Math.floor(currentIndex / 2);
     }
@@ -151,11 +172,16 @@ export class PoseidonTree {
   // Traverses tree from leaf to root (asynchronous)
   private async traverseAsync(
     index: number,
-    fn: (level: number, currentIndex: number, siblingIndex: number) => Promise<void>
+    fn: (
+      level: number,
+      currentIndex: number,
+      siblingIndex: number
+    ) => Promise<void>
   ): Promise<void> {
     let currentIndex = index;
     for (let level = 0; level < this.levels; level++) {
-      const siblingIndex = currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
+      const siblingIndex =
+        currentIndex % 2 === 0 ? currentIndex + 1 : currentIndex - 1;
       await fn(level, currentIndex, siblingIndex);
       currentIndex = Math.floor(currentIndex / 2);
     }

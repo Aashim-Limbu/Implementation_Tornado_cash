@@ -1,0 +1,6 @@
+[submodule "lib/poseidon2-evm"]
+	path = lib/poseidon2-evm
+	url = https://github.com/zemse/poseidon2-evm
+[submodule "contracts/lib/poseidon2-evm"]
+	path = contracts/lib/poseidon2-evm
+	url = https://github.com/zemse/poseidon2-evm

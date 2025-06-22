@@ -7,3 +7,4 @@
 - We need to check whether the commitment is present in Merkle Tree itself. Inputs to our proof ->
     - Proposed Root
     - Merkle Root
+- Check the nullifier matches the public nullifier hash.

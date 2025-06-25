@@ -16,6 +16,7 @@ interface Proof {
   leaf: string;
 }
 
+// Represents a Merkle tree using Poseidon2 hashing
 export class PoseidonTree {
   private levels: number;
   private hashLeftRight: (left: string, right: string) => Promise<string>;

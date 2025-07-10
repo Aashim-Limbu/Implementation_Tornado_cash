@@ -4,17 +4,12 @@ import circuit from "../../circuits/target/contracts.json";
 import { ethers } from "ethers";
 import { merkleTree } from "./merkletree";
 
-/*
-// Public inputs
-    root: pub Field,
-    nullifier_hash: pub Field,
-    _recipient: pub Field, // to prevent the proof exploit
-    // Private inputs
-    nullifier: Field,
-    secret: Field,
-    merkle_proof: [Field; 20],
-    is_even: [bool; 20],
-    */
+/**
+ * Generates a proof for a given nullifier, secret, recipient, and Merkle tree leaves.
+ * The proof is generated using the Noir circuit and Barretenberg backend.
+ * Merkle tree leaves are
+ * @returns {Promise<string>} The generated proof encoded as a string.
+ */
 async function generateProofs() {
   try {
     const args = process.argv.slice(2);

@@ -4,6 +4,7 @@ pragma solidity >=0.8.0 < 0.9.0;
 import {Mixer, Poseidon2} from "../src/Mixer.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {HonkVerifier} from "../src/Verifier.sol";
+import {DeployMixer} from "../script/DeployMixer.s.sol";
 
 contract MixerTest is Test {
     Mixer public mixer;
@@ -13,9 +14,13 @@ contract MixerTest is Test {
     uint32 public depth = 20;
 
     function setUp() public {
-        verifier = new HonkVerifier();
-        hasher = new Poseidon2();
-        mixer = new Mixer(depth, hasher, verifier);
+        uint32 _depth = uint32(vm.envUint("MIXER_DEPTH"));
+        console.log(_depth);
+        DeployMixer deployer = new DeployMixer();
+        (verifier, hasher, mixer) = deployer.deploy(_depth);
+        // verifier = new HonkVerifier();
+        // hasher = new Poseidon2();
+        // mixer = new Mixer(depth, hasher, verifier);
     }
 
     function _getCommitment() public returns (bytes32 commitment, bytes32 nullifier, bytes32 secret) {
@@ -79,5 +84,20 @@ contract MixerTest is Test {
         mixer.withdraw(proof, publicInputs[0], publicInputs[1], payable(address(uint160(uint256(publicInputs[2])))));
         assertEq(recipient.balance, mixer.DENOMINATION());
         assertEq(address(mixer).balance, 0);
+    }
+
+    function testAnotherAddressSendProof() public {
+        (bytes32 commitment, bytes32 nullifier, bytes32 secret) = _getCommitment();
+        vm.expectEmit(true, false, false, true);
+        emit Mixer.Deposited(commitment, 0, block.timestamp);
+        mixer.deposit{value: mixer.DENOMINATION()}(commitment);
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = commitment;
+        (bytes memory proof, bytes32[] memory publicInputs) = _getProof(nullifier, secret, recipient, leaves);
+        address attacker = makeAddr("Attacker");
+        // make a withdrawal
+        vm.prank(attacker);
+        vm.expectRevert();
+        mixer.withdraw(proof, publicInputs[0], publicInputs[1], payable(attacker));
     }
 }

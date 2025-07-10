@@ -9,8 +9,9 @@ pragma solidity >=0.8.0 <0.9.0;
 import {IncrementalMerkleTree} from "./IncrementalMerkleTree.sol";
 import {Poseidon2} from "@poseidon2/contracts/Poseidon2.sol";
 import {IVerifier} from "./Verifier.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Mixer is IncrementalMerkleTree {
+contract Mixer is IncrementalMerkleTree, ReentrancyGuard {
     mapping(bytes32 commitment => bool isUsed) public s_commitments;
     mapping(bytes32 nullifier => bool isUsed) public s_nullifierHashes;
     IVerifier public immutable i_verifier;
@@ -35,7 +36,7 @@ contract Mixer is IncrementalMerkleTree {
      * @param _commitment the poseiden commitment of the nullifier and secret (generated off-chain).
      */
 
-    function deposit(bytes32 _commitment) external payable {
+    function deposit(bytes32 _commitment) external payable nonReentrant{
         // 1. Check if the commitment is already been used.
         if (s_commitments[_commitment]) {
             revert Mixer__CommitmentAlreadyAdded(_commitment);
@@ -45,18 +46,22 @@ contract Mixer is IncrementalMerkleTree {
         }
         // 2. Allow user to send ETH and make sure it is of the correct fixed amount which is (0.001 ETH) (denomination).
         // 3. Add the commitment to a data structure containing all of the commitments.
+        // 4. Insert the commitment into the merkle tree and emit an event with the index of the commitment.
         uint32 insertedIndex = _insert(_commitment);
         s_commitments[_commitment] = true;
         // we need to compute the merkle tree off chain to generate proofs. Thus we can't query the mappings we emmit them in event. [Compute entire merkle tree off chain]
         emit Deposited(_commitment, insertedIndex, block.timestamp);
     }
     /**
-     * @notice Withdraw funds from the mixer in a private way.
-     * @param _proof The proof that the user has the right to withdraw (they know a valid commitment).
+     * @notice Withdraw funds from the mixer.
+     * @param _proof the zk proof generated off-chain.
+     * @param _root the root of the merkle tree that was used to generate the proof.
+     * @param _nullifierHash the nullifier hash that was used to generate the proof.
+     * @param _recipient the address that will receive the funds.
      */
 
     function withdraw(bytes calldata _proof, bytes32 _root, bytes32 _nullifierHash, address payable _recipient)
-        external
+        external nonReentrant
     {
         // Check that the root that was used in the proof matches the root on-chain.
         if (!_isKnownRoot(_root)) {

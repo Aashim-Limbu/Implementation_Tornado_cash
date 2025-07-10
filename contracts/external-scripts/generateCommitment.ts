@@ -1,10 +1,12 @@
 import { Barretenberg, Fr } from "@aztec/bb.js";
 import { ethers } from "ethers";
 
+
 export default async function generateCommitments() {
   const bb = await Barretenberg.new();
   const nullifier = Fr.random();
   const secret = Fr.random();
+
 
   const commitment = await bb.poseidon2Hash([nullifier, secret]);
   const result = ethers.AbiCoder.defaultAbiCoder().encode(

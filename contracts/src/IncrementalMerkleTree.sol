@@ -32,6 +32,11 @@ contract IncrementalMerkleTree {
     }
 
     // The tree size will always be for depth level n =>  the number of leaf would be 2^n;
+    /**
+     * @notice Insert a leaf into the incremental merkle tree.
+     * @param _leaf the leaf to insert.
+     * @return nextIndex the index of the leaf that was inserted.
+     */
     function _insert(bytes32 _leaf) internal returns (uint32 nextIndex) {
         // add the leaf to incremental merkle tree.
         uint32 _nextleafIndex = s_nextLeafIndex;
@@ -50,7 +55,7 @@ contract IncrementalMerkleTree {
             if (currentIndex % 2 == 0) {
                 left = currentHash;
                 right = zeros(i);
-                s_cachedSubtree[i] = currentHash;
+                s_cachedSubtree[i] = currentHash; // which is anyway the left part
             } else {
                 left = s_cachedSubtree[i];
                 right = currentHash;
@@ -68,7 +73,11 @@ contract IncrementalMerkleTree {
         s_nextLeafIndex = _nextleafIndex + 1;
         return _nextleafIndex;
     }
-
+    /**
+     * @notice Check if the root is known in the history of roots.
+     * @param _root the root to check.
+     * @return true if the root is known, false otherwise.
+     */
     function _isKnownRoot(bytes32 _root) internal view returns (bool) {
         if (_root == 0) {
             // since anyother root during the initialization is s_root = 0. It prevents that .

@@ -1,15 +1,20 @@
 import { create } from "zustand";
+export type DENOMINATION_TYPE = {
+  id: number;
+  value: string;
+  contractAddress: string;
+};
 
 interface DepositState {
-  contractAddress: string;
+  denomination: DENOMINATION_TYPE | null;
   tokenAddress: string;
-  setContractAddress: (address: string) => void;
   setTokenAddress: (address: string) => void;
+  setDenomination: (denomination: DENOMINATION_TYPE) => void;
 }
 
 export const useDepositStore = create<DepositState>((set) => ({
-  contractAddress: "",
+  denomination: null,
   tokenAddress: "",
-  setContractAddress: (address) => set({ contractAddress: address }),
+  setDenomination: (denomination) => set({ denomination }),
   setTokenAddress: (address) => set({ tokenAddress: address }),
 }));

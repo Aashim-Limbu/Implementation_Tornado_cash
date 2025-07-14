@@ -1,9 +1,10 @@
 "use client";
 import DepositSection from "@/components/Deposit";
+import Withdraw from "@/components/Withdraw";
 import {useState} from "react";
 
 export default function Home() {
-    const [isActive, setIsActive] = useState(1);
+    const [isActive, setIsActive] = useState(2);
     function handleClick(id: number) {
         setIsActive(id);
     }
@@ -30,7 +31,7 @@ export default function Home() {
                         </li>
                     </ul>
                     <div className="w-full space-y-6 p-6 bg-white/10 backdrop-blur-md mt-2 border border-white/20 rounded-xl">
-                        <DepositSection />
+                        {isActive == 1 ? <DepositSection /> : <Withdraw />}
                     </div>
                 </div>
 

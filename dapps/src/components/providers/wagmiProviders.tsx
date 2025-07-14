@@ -7,9 +7,9 @@ import {WagmiProvider} from "wagmi";
 import Navbar from "../Navbar";
 
 const queryClient = new QueryClient();
+const config = getWagmiConfig();
 
 export const RainbowProvider = ({children}: {children: ReactNode}) => {
-    const config = getWagmiConfig();
     return (
         <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>

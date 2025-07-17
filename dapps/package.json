@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@aztec/bb.js": "^0.84.0",
+    "@headlessui/react": "^2.2.4",
+    "@heroicons/react": "^2.2.0",
     "@noir-lang/noir_js": "^1.0.0-beta.6",
     "@rainbow-me/rainbowkit": "^2.2.8",
     "@tanstack/react-query": "^5.81.5",

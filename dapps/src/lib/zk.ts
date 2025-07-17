@@ -23,7 +23,6 @@ export async function generateCommitments() {
 export type CircuitInputProof = {
   nullifier: string;
   secret: string;
-  recipient: string;
   _recipient: string;
   leaves: string[];
 };

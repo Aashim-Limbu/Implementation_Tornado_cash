@@ -2,12 +2,24 @@ import { Chain, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { sepolia, zksyncSepoliaTestnet } from "wagmi/chains";
 
 let _config: ReturnType<typeof getDefaultConfig> | null = null;
+
+// Fixed Anvil chain configuration
 const anvil: Chain = {
-  id: 31337,
+  id: 31_337,
   name: "Anvil",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH", // Changed from "GO" to "ETH"
+    decimals: 18,
+  },
   rpcUrls: {
     default: { http: ["http://127.0.0.1:8545"] },
+  },
+  blockExplorers: {
+    default: {
+      name: "Anvil Explorer",
+      url: "http://127.0.0.1:8545",
+    },
   },
   testnet: true,
 };

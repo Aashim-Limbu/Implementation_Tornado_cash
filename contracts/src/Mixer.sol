@@ -36,7 +36,7 @@ contract Mixer is IncrementalMerkleTree, ReentrancyGuard {
      * @param _commitment the poseiden commitment of the nullifier and secret (generated off-chain).
      */
 
-    function deposit(bytes32 _commitment) external payable nonReentrant{
+    function deposit(bytes32 _commitment) external payable nonReentrant {
         // 1. Check if the commitment is already been used.
         if (s_commitments[_commitment]) {
             revert Mixer__CommitmentAlreadyAdded(_commitment);
@@ -61,7 +61,8 @@ contract Mixer is IncrementalMerkleTree, ReentrancyGuard {
      */
 
     function withdraw(bytes calldata _proof, bytes32 _root, bytes32 _nullifierHash, address payable _recipient)
-        external nonReentrant
+        external
+        nonReentrant
     {
         // Check that the root that was used in the proof matches the root on-chain.
         if (!_isKnownRoot(_root)) {

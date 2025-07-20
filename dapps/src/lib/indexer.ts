@@ -2,12 +2,9 @@ import { JsonRpcProvider, Contract } from "ethers";
 
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
 const provider = new JsonRpcProvider(RPC_URL);
-const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!;
 const ABI = [
   "event Deposited(bytes32 indexed _commitments, uint32 nextIndex, uint256 timestamp)",
 ];
-const contract = new Contract(contractAddress, ABI, provider);
-const FROM_BLOCK = 8625793;
 
 interface DepositEvent {
   commitment: string;
@@ -17,10 +14,13 @@ interface DepositEvent {
   blockNumber: number;
 }
 
+const FROM_BLOCK = 8625793;
 export async function fetchLeaves(
-  fromBlock = 0,
+  contractAddress: string,
+  fromBlock = 0 | FROM_BLOCK,
   toBlock: number | string = "latest"
 ): Promise<DepositEvent[]> {
+  const contract = new Contract(contractAddress, ABI, provider);
   try {
     const filter = contract.filters.Deposited();
     const events = await contract.queryFilter(filter, fromBlock, toBlock);
@@ -50,5 +50,3 @@ export async function fetchLeaves(
     throw new Error(`Failed to fetch deposit events: ${error}`);
   }
 }
-
-

@@ -24,8 +24,6 @@ export const parseContractError = (
   error: unknown,
   isSimulation = false
 ): ErrorState => {
-  console.log("Aashim Error: ", error);
-
   const prefix = isSimulation ? "Simulation failed: " : "";
 
   if (error instanceof BaseError) {

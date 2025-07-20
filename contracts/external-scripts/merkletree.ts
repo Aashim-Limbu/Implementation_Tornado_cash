@@ -189,7 +189,7 @@ export class PoseidonTree {
   }
 }
 
-// Precomputed zero values for each tree level
+// Precomputed zero values for each tree level 0..20
 const ZERO_VALUES = [
   "0x1f9c815bb3f29ba2fc3f19b72e48938aed2707689809bde3eccc309ba32fe917",
   "0x26826ad1a5d1795f583284d34418d3bac2b6b2515b16a2a432cf6aa3b6443ba9",

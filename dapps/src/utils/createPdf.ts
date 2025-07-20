@@ -1,12 +1,16 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
-export default async function createPDF(nullifier: string, secret: string) {
+export default async function createPDF(
+  id: number,
+  nullifier: string,
+  secret: string
+) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([600, 800]);
 
   const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
   const title = "Your ZK Commitment Keys";
-  const content = [`Nullifier: ${nullifier}`, `Secret: ${secret}`];
+  const content = [`id: ${id}`, `Nullifier: ${nullifier}`, `Secret: ${secret}`];
 
   // Configuration
   const fontSizeTitle = 24;

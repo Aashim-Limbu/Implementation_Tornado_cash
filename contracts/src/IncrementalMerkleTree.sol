@@ -78,6 +78,7 @@ contract IncrementalMerkleTree {
      * @param _root the root to check.
      * @return true if the root is known, false otherwise.
      */
+
     function _isKnownRoot(bytes32 _root) internal view returns (bool) {
         if (_root == 0) {
             // since anyother root during the initialization is s_root = 0. It prevents that .
@@ -96,6 +97,11 @@ contract IncrementalMerkleTree {
         } while (i != _currentRootIndex);
         return false;
     }
+    // we don't calculate the zero subtree on-chain we use them given the data from off-chain
+    // we do some keccak("string") which is bytes32 , but poseidon2 hash function uses Field type data so maximum size of Field is less than the maximum size of o/p of keccak256 hash
+    // so we do modulus operation keccak256("aashim") % Field.Prime = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
+    // cast --to-dec 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
+    // bytes32(uint256(keccak256("aashim"))%21888242871839275222246405745257275088548364400416034343698204186575808495617)
 
     function zeros(uint32 i) public pure returns (bytes32) {
         if (i == 0) return bytes32(0x1f9c815bb3f29ba2fc3f19b72e48938aed2707689809bde3eccc309ba32fe917);

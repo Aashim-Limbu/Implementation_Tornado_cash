@@ -1,10 +1,12 @@
 "use client";
 import DepositSection from "@/components/Deposit";
+import Loader from "@/components/Loader";
 import Withdraw from "@/components/Withdraw";
 import {useState} from "react";
 
 export default function Home() {
-    const [isActive, setIsActive] = useState(2);
+    const [isActive, setIsActive] = useState(1);
+    const [isLoading, setIsLoading] = useState(false);
     function handleClick(id: number) {
         setIsActive(id);
     }
@@ -30,8 +32,13 @@ export default function Home() {
                             Withdraw
                         </li>
                     </ul>
+                    {isLoading && <Loader />}
                     <div className="w-full space-y-6 p-6 bg-white/10 backdrop-blur-md mt-2 border border-white/20 rounded-xl">
-                        {isActive == 1 ? <DepositSection /> : <Withdraw />}
+                        {isActive == 1 ? (
+                            <DepositSection setIsLoading={setIsLoading} />
+                        ) : (
+                            <Withdraw setIsLoading={setIsLoading} />
+                        )}
                     </div>
                 </div>
 

@@ -3,7 +3,7 @@
 "use client";
 import React, {ChangeEvent, useCallback, useState, useEffect} from "react";
 import {useDropzone} from "react-dropzone";
-import {getAddress, isAddress} from "viem";
+import {Address, getAddress, isAddress} from "viem";
 import * as pdfjs from "pdfjs-dist";
 import type {TextItem} from "pdfjs-dist/types/src/display/api";
 import {fetchLeaves} from "@/lib/indexer";
@@ -13,14 +13,11 @@ import {useWaitForTransactionReceipt, useWriteContract, usePublicClient, useAcco
 import {ethers} from "ethers";
 import Modal from "./Modal";
 import {ErrorState, ErrorType, parseContractError} from "@/utils/parseError";
+import {DENOMINATION_CONTRACT_ADDRESS} from "./Deposit";
 
 // Worker setup
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-// Constants
-const CONTRACT_ADDRESS = "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0";
-
-// Types
 type ParsedValues = {
     nullifier: string;
     secret: string;
@@ -41,7 +38,6 @@ type LoadingState =
     | "confirming-transaction"
     | "success";
 
-// Initial state
 const initialState = {
     recipient: "",
     isValid: true,
@@ -51,11 +47,10 @@ const initialState = {
     loadingState: "idle" as LoadingState,
 };
 
-// Enhanced error parsing function with ABI error handling
-
-export default function Withdraw() {
+export default function Withdraw({setIsLoading}: {setIsLoading: React.Dispatch<React.SetStateAction<boolean>>}) {
     const [state, setState] = useState(initialState);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [contractAddress, setContractAddress] = useState<string | null>(null);
 
     const publicClient = usePublicClient();
     const {address: account} = useAccount();
@@ -71,7 +66,6 @@ export default function Withdraw() {
         setIsModalOpen(false);
     }, []);
 
-    // Enhanced error handling in useEffect
     useEffect(() => {
         if (isPending) {
             setState((prev) => ({...prev, loadingState: "confirming-transaction", error: null}));
@@ -83,7 +77,6 @@ export default function Withdraw() {
             setTimeout(() => {
                 resetForm();
             }, 3000);
-
         } else if (writeError || receiptError) {
             const error = writeError || receiptError;
             const parsedError = parseContractError(error, false);
@@ -106,7 +99,6 @@ export default function Withdraw() {
         }));
     }, []);
 
-    // Enhanced PDF parsing with better error handling
     const parsePDF = useCallback(async (file: File): Promise<ParsedValues> => {
         try {
             const arrayBuffer = await file.arrayBuffer();
@@ -115,33 +107,39 @@ export default function Withdraw() {
             const textContent = await page.getTextContent();
             const fullText = textContent.items.map((item) => ("str" in item ? (item as TextItem).str : "")).join(" ");
 
+            console.log("🔍 DEBUG: Full PDF text:", fullText);
+
+            const idMatch = fullText.match(/id:\s*(\d+)/i);
             const nullifierMatch = fullText.match(/Nullifier:\s*(0x[a-fA-F0-9]+)/);
             const secretMatch = fullText.match(/Secret:\s*(0x[a-fA-F0-9]+)/);
 
+            console.log("🔍 DEBUG: Extracted values:");
+            console.log("  - ID:", idMatch?.[1]);
+            console.log("  - Nullifier:", nullifierMatch?.[1]);
+            console.log("  - Secret:", secretMatch?.[1]);
+
+            const id = idMatch?.[1] || "";
             const nullifier = nullifierMatch?.[1] || "";
             const secret = secretMatch?.[1] || "";
 
+            const contract = DENOMINATION_CONTRACT_ADDRESS.find((el) => el.id === Number(id))?.contractAddress;
+
+            if (!contract) throw new Error("Cannot parse the contract");
+
+            setContractAddress(contract);
+            console.log("🔍 DEBUG: Contract address from PDF:", contract);
+
             if (!nullifier || !secret) {
-                throw new Error(
-                    "Could not find Nullifier or Secret in the document. Please ensure you're using the correct deposit receipt."
-                );
+                throw new Error("Could not find Nullifier or Secret in the document.");
             }
 
-            // Validate the format of extracted values
-            if (!nullifier.startsWith("0x") || !secret.startsWith("0x")) {
-                throw new Error("Invalid format for Nullifier or Secret. Expected hexadecimal values.");
-            }
-
-            if (nullifier.length !== 66 || secret.length !== 66) {
-                throw new Error("Invalid length for Nullifier or Secret. Expected 32-byte hex strings.");
-            }
-
-            return {nullifier, secret};
+            return {
+                nullifier,
+                secret,
+            };
         } catch (error) {
-            if (error instanceof Error) {
-                throw error;
-            }
-            throw new Error("Failed to parse PDF. Please ensure it's a valid deposit receipt.");
+            console.error("🔍 DEBUG: PDF parsing error:", error);
+            throw error;
         }
     }, []);
 
@@ -199,15 +197,16 @@ export default function Withdraw() {
             if (!isAddress(state.recipient)) {
                 throw new Error("Invalid recipient address format.");
             }
+            if (!contractAddress) throw new Error("Contract Address can't be parsed");
 
-            const deposits = await fetchLeaves(0, "latest");
+            const deposits = await fetchLeaves(contractAddress, 0, "latest");
 
             if (!deposits || deposits.length === 0) {
                 throw new Error("No deposits found. The mixer contract may be empty or there's a network issue.");
             }
 
             const leaves = deposits.sort((a, b) => a.index - b.index).map((deposit) => deposit.commitment);
-
+            setIsLoading(true);
             if (!state.proofData) {
                 const result = await generateProofs({
                     nullifier: state.values.nullifier,
@@ -215,7 +214,6 @@ export default function Withdraw() {
                     _recipient: state.recipient,
                     leaves,
                 });
-
                 const [proof, publicInputs] = ethers.AbiCoder.defaultAbiCoder().decode(["bytes", "bytes32[]"], result);
 
                 if (!proof || !publicInputs || publicInputs.length !== 3) {
@@ -228,6 +226,7 @@ export default function Withdraw() {
                     nullifierHash: publicInputs[1],
                     publicRecipient: publicInputs[2],
                 };
+                console.log("✅ ProofData: ", proofData);
 
                 setState((prev) => ({
                     ...prev,
@@ -250,13 +249,18 @@ export default function Withdraw() {
                 },
                 loadingState: "idle",
             }));
+        } finally {
+            setIsLoading(false);
         }
     };
 
     // New function to simulate withdrawal transaction
     const simulateWithdrawal = useCallback(
         async (proofData: ProofData) => {
-            if (!publicClient || !account) {
+            if (!publicClient || !account || !contractAddress) {
+                console.log("PUBLIC CLIENT: ", publicClient);
+                console.log("Account: ", account);
+                console.log("contract Address: ", contractAddress);
                 setState((prev) => ({
                     ...prev,
                     error: {
@@ -275,7 +279,7 @@ export default function Withdraw() {
 
                 // Simulate the contract call
                 const simulationResult = await publicClient.simulateContract({
-                    address: CONTRACT_ADDRESS,
+                    address: contractAddress as Address,
                     abi: mixerAbi.abi,
                     functionName: "withdraw",
                     args: [proofData.proof, proofData.root, proofData.nullifierHash, convertedRecipient],
@@ -303,7 +307,7 @@ export default function Withdraw() {
                 }));
             }
         },
-        [publicClient, account]
+        [publicClient, account, contractAddress]
     );
 
     // Enhanced withdrawal with pre-simulation validation
@@ -320,7 +324,7 @@ export default function Withdraw() {
             console.log("Nullifier Hash: ", state.proofData.nullifierHash);
 
             writeContract({
-                address: CONTRACT_ADDRESS,
+                address: contractAddress as Address,
                 abi: mixerAbi.abi,
                 functionName: "withdraw",
                 args: [state.proofData.proof, state.proofData.root, state.proofData.nullifierHash, convertedRecipient],
@@ -336,7 +340,7 @@ export default function Withdraw() {
                 },
             }));
         }
-    }, [state.proofData, writeContract]);
+    }, [state.proofData, writeContract, contractAddress]);
 
     const {getRootProps, getInputProps, isDragActive} = useDropzone({
         onDrop,
